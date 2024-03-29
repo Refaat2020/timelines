@@ -192,6 +192,7 @@ class TimelineTileBuilder {
     NullableIndexedWidgetBuilder? oppositeContentsBuilder,
     NullableIndexedWidgetBuilder? indicatorBuilder,
     ConnectedConnectorBuilder? connectorBuilder,
+    Widget? defaultConnector,
     WidgetBuilder? firstConnectorBuilder,
     WidgetBuilder? lastConnectorBuilder,
     double? itemExtent,
@@ -208,6 +209,7 @@ class TimelineTileBuilder {
       contentsBuilder: contentsBuilder,
       oppositeContentsBuilder: oppositeContentsBuilder,
       indicatorBuilder: indicatorBuilder,
+      defaultConnector: defaultConnector,
       startConnectorBuilder: _createConnectedStartConnectorBuilder(
         connectionDirection: connectionDirection,
         firstConnectorBuilder: firstConnectorBuilder,
@@ -338,6 +340,7 @@ class TimelineTileBuilder {
     NullableIndexedWidgetBuilder? indicatorBuilder,
     NullableIndexedWidgetBuilder? startConnectorBuilder,
     NullableIndexedWidgetBuilder? endConnectorBuilder,
+    Widget? defaultConnector,
     double? itemExtent,
     IndexedValueBuilder<double>? itemExtentBuilder,
     IndexedValueBuilder<double>? nodePositionBuilder,
@@ -366,6 +369,9 @@ class TimelineTileBuilder {
         final tile = TimelineTile(
           mainAxisExtent: itemExtent ?? itemExtentBuilder?.call(context, index),
           node: TimelineNode(
+            index: index,
+            connectedConnectorBuilder: defaultConnector!,
+            itemCount: itemCount,
             indicator: indicatorBuilder?.call(context, index) ??
                 Indicator.transparent(),
             startConnector: startConnectorBuilder?.call(context, index),

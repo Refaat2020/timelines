@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 
-import 'connectors.dart';
-import 'indicators.dart';
-import 'timeline_theme.dart';
+import '../timelines.dart';
 import 'util.dart';
 
 /// [TimelineTile]'s timeline node
@@ -27,6 +24,9 @@ class TimelineNode extends StatelessWidget with TimelineTileNode {
   const TimelineNode({
     Key? key,
     this.direction,
+    required this.index,
+    required this.itemCount,
+    required this.connectedConnectorBuilder,
     this.startConnector,
     this.endConnector,
     this.indicator = const ContainerIndicator(),
@@ -52,9 +52,15 @@ class TimelineNode extends StatelessWidget with TimelineTileNode {
     bool drawStartConnector = true,
     bool drawEndConnector = true,
     bool? overlap,
+    required int index,
+    required int itemCount,
+    required Widget connectedConnectorBuilder,
   }) : this(
           key: key,
           direction: direction,
+          index: index,
+          itemCount: itemCount,
+          connectedConnectorBuilder: connectedConnectorBuilder,
           startConnector: drawStartConnector
               ? SolidLineConnector(
                   direction: direction,
@@ -92,6 +98,9 @@ class TimelineNode extends StatelessWidget with TimelineTileNode {
 
   /// The connector of the end edge of this node
   final Widget? endConnector;
+  final Widget connectedConnectorBuilder;
+  final int index;
+  final int itemCount;
 
   /// The indicator of the node
   final Widget indicator;
@@ -146,12 +155,25 @@ class TimelineNode extends StatelessWidget with TimelineTileNode {
           child: endConnector ?? TransparentConnector(),
         ),
     ];
-
     switch (direction) {
       case Axis.vertical:
         line = Column(
-          mainAxisSize: MainAxisSize.min,
-          children: lineItems,
+          mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            if (indicatorFlex > 0) startConnector ?? TransparentConnector(),
+            if (!overlap) indicator,
+            // Spacer(),
+            if (indicatorFlex < 1)
+              Flexible(
+                  flex: ((1 - indicatorFlex) * kFlexMultiplier).toInt(),
+                  child: endConnector is Connector
+                      ? endConnector ?? TransparentConnector()
+                      : TransparentConnector()),
+            if (index + 1 == itemCount || itemCount == 1)
+              Expanded(flex: 1000000, child: connectedConnectorBuilder),
+            if (endConnector != null) endConnector!
+          ],
         );
         break;
       case Axis.horizontal:
@@ -161,7 +183,7 @@ class TimelineNode extends StatelessWidget with TimelineTileNode {
         );
         break;
     }
-
+    print(endConnector);
     Widget result;
     if (overlap) {
       Widget positionedIndicator = indicator;
@@ -172,6 +194,7 @@ class TimelineNode extends StatelessWidget with TimelineTileNode {
             child: TransparentConnector(),
           ),
         indicator,
+        // indicator,
         Flexible(
           flex: ((1 - indicatorFlex) * kFlexMultiplier).toInt(),
           child: TransparentConnector(),
