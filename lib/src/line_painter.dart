@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
@@ -30,7 +29,7 @@ class DashedLinePainter extends CustomPainter {
   const DashedLinePainter({
     required this.direction,
     required this.color,
-    this.gapColor = Colors.transparent,
+    required this.gapColor,
     this.dashSize = 1.0,
     this.gapSize = 1.0,
     this.strokeWidth = 1.0,
@@ -39,25 +38,12 @@ class DashedLinePainter extends CustomPainter {
         assert(gapSize >= 0),
         assert(strokeWidth >= 0);
 
-  /// {@macro timelines.direction}
   final Axis direction;
-
-  /// The color to paint dash of line.
   final Color color;
-
-  /// The color to paint gap(another dash) of line.
   final Color gapColor;
-
-  /// The size of dash
   final double dashSize;
-
-  /// The size of gap, it also draws [gapColor]
   final double gapSize;
-
-  /// The stroke width of dash and gap.
   final double strokeWidth;
-
-  /// Styles to use for line endings.
   final StrokeCap strokeCap;
 
   @override
@@ -76,7 +62,7 @@ class DashedLinePainter extends CustomPainter {
     );
 
     while (offset.hasNext) {
-      // draw dash
+      // Draw the dash with the primary color
       paint.color = color;
       canvas.drawLine(
         offset,
@@ -85,15 +71,13 @@ class DashedLinePainter extends CustomPainter {
       );
       offset = offset.translateDashSize();
 
-      // draw gap
-      if (gapColor != Colors.transparent) {
-        paint.color = gapColor;
-        canvas.drawLine(
-          offset,
-          offset.translateGapSize(),
-          paint,
-        );
-      }
+      // Draw the gap with the alternate color
+      paint.color = gapColor;
+      canvas.drawLine(
+        offset,
+        offset.translateGapSize(),
+        paint,
+      );
       offset = offset.translateGapSize();
     }
   }
@@ -146,19 +130,13 @@ class _DashOffset extends Offset {
   final Axis axis;
 
   double get offset {
-    if (axis == Axis.vertical) {
-      return dy;
-    } else {
-      return dx;
-    }
+    return axis == Axis.vertical ? dy : dx;
   }
 
   bool get hasNext {
-    if (axis == Axis.vertical) {
-      return offset < containerSize.height;
-    } else {
-      return offset < containerSize.width;
-    }
+    return axis == Axis.vertical
+        ? offset < containerSize.height
+        : offset < containerSize.width;
   }
 
   _DashOffset translateDashSize() {
@@ -170,11 +148,9 @@ class _DashOffset extends Offset {
   }
 
   _DashOffset _translateDirectionally(double offset) {
-    if (axis == Axis.vertical) {
-      return translate(0, offset) as _DashOffset;
-    } else {
-      return translate(offset, 0) as _DashOffset;
-    }
+    return axis == Axis.vertical
+        ? translate(0, offset) as _DashOffset
+        : translate(offset, 0) as _DashOffset;
   }
 
   @override
