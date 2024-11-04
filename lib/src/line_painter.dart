@@ -2,61 +2,25 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-import 'connectors.dart';
-
-/// Paints a [DashedLineConnector].
-///
-/// Draw the line like this:
-/// ```
-///  0 > [dash][gap][dash][gap] < constraints size
-/// ```
-///
-/// [dashSize] specifies the size of [dash]. and [gapSize] specifies the size of
-/// [gap].
-///
-/// When using the default colors, this painter draws a dotted line or dashed
-/// line that familiar.
-/// If set other [gapColor], this painter draws a line that alternates between
-/// two colors.
 class DashedLinePainter extends CustomPainter {
-  /// Creates a dashed line painter.
-  ///
-  /// The [dashSize] argument must be 1 or more, and the [gapSize] and
-  /// [strokeWidth] arguments must be positive numbers.
-  ///
-  /// The [direction], [color], [gapColor] and [strokeCap] arguments must not be
-  /// null.
   const DashedLinePainter({
     required this.direction,
     required this.color,
-    this.gapColor = Colors.transparent,
-    this.dashSize = 1.0,
-    this.gapSize = 1.0,
-    this.strokeWidth = 1.0,
+    required this.gapColor,
+    this.dashSize = 4.0,
+    this.gapSize = 4.0,
+    this.strokeWidth = 2.0,
     this.strokeCap = StrokeCap.square,
-  })  : assert(dashSize >= 1),
+  })  : assert(dashSize > 0),
         assert(gapSize >= 0),
         assert(strokeWidth >= 0);
 
-  /// {@macro timelines.direction}
   final Axis direction;
-
-  /// The color to paint dash of line.
   final Color color;
-
-  /// The color to paint gap(another dash) of line.
   final Color gapColor;
-
-  /// The size of dash
   final double dashSize;
-
-  /// The size of gap, it also draws [gapColor]
   final double gapSize;
-
-  /// The stroke width of dash and gap.
   final double strokeWidth;
-
-  /// Styles to use for line endings.
   final StrokeCap strokeCap;
 
   @override
@@ -66,34 +30,33 @@ class DashedLinePainter extends CustomPainter {
       ..strokeCap = strokeCap
       ..style = PaintingStyle.stroke;
 
-    var offset = _DashOffset(
-      containerSize: size,
-      strokeWidth: strokeWidth,
-      dashSize: dashSize,
-      gapSize: gapSize,
-      axis: direction,
-    );
+    double startX = direction == Axis.horizontal ? 0 : size.width / 2;
+    double startY = direction == Axis.vertical ? 0 : size.height / 2;
+    final maxLength = direction == Axis.horizontal ? size.width : size.height;
 
-    while (offset.hasNext) {
-      // draw dash
-      paint.color = color;
+    while ((direction == Axis.horizontal ? startX : startY) < maxLength) {
+      paint.color = color; // Paint dash with primary color
+      final dashEndX =
+          direction == Axis.horizontal ? startX + dashSize : startX;
+      final dashEndY = direction == Axis.vertical ? startY + dashSize : startY;
+
+      if ((direction == Axis.horizontal ? dashEndX : dashEndY) > maxLength)
+        break;
       canvas.drawLine(
-        offset,
-        offset.translateDashSize(),
-        paint,
-      );
-      offset = offset.translateDashSize();
+          Offset(startX, startY), Offset(dashEndX, dashEndY), paint);
 
-      // draw gap
-      if (gapColor != Colors.transparent) {
-        paint.color = gapColor;
-        canvas.drawLine(
-          offset,
-          offset.translateGapSize(),
-          paint,
-        );
-      }
-      offset = offset.translateGapSize();
+      startX = dashEndX;
+      startY = dashEndY;
+
+      paint.color = gapColor; // Paint gap with secondary color
+      final gapEndX = direction == Axis.horizontal ? startX + gapSize : startX;
+      final gapEndY = direction == Axis.vertical ? startY + gapSize : startY;
+
+      if ((direction == Axis.horizontal ? gapEndX : gapEndY) > maxLength) break;
+      canvas.drawLine(Offset(startX, startY), Offset(gapEndX, gapEndY), paint);
+
+      startX = gapEndX;
+      startY = gapEndY;
     }
   }
 
@@ -106,6 +69,127 @@ class DashedLinePainter extends CustomPainter {
         gapSize != oldDelegate.gapSize ||
         strokeWidth != oldDelegate.strokeWidth ||
         strokeCap != oldDelegate.strokeCap;
+  }
+}
+
+class SplitLinePainter extends CustomPainter {
+  const SplitLinePainter({
+    required this.direction,
+    required this.color1,
+    required this.color2,
+    this.strokeWidth = 4.0,
+  }) : assert(strokeWidth >= 0);
+
+  final Axis direction;
+  final Color color1;
+  final Color color2;
+  final double strokeWidth;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke;
+
+    // Calculate the midpoint of the line
+    final halfLength =
+        direction == Axis.vertical ? size.height / 2 : size.width / 2;
+
+    // Draw the first segment in color1
+    paint.color = color1;
+    if (direction == Axis.vertical) {
+      canvas.drawLine(
+          Offset(size.width / 2, 0), Offset(size.width / 2, halfLength), paint);
+    } else {
+      canvas.drawLine(Offset(0, size.height / 2),
+          Offset(halfLength, size.height / 2), paint);
+    }
+
+    // Draw the second segment in color2
+    paint.color = color2;
+    if (direction == Axis.vertical) {
+      canvas.drawLine(Offset(size.width / 2, halfLength),
+          Offset(size.width / 2, size.height), paint);
+    } else {
+      canvas.drawLine(Offset(halfLength, size.height / 2),
+          Offset(size.width, size.height / 2), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(SplitLinePainter oldDelegate) {
+    return direction != oldDelegate.direction ||
+        color1 != oldDelegate.color1 ||
+        color2 != oldDelegate.color2 ||
+        strokeWidth != oldDelegate.strokeWidth;
+  }
+}
+
+class SplitDashedLinePainter extends CustomPainter {
+  const SplitDashedLinePainter({
+    required this.direction,
+    required this.color1,
+    required this.color2,
+    this.dashSize = 5.0,
+    this.gapSize = 3.0,
+    this.strokeWidth = 4.0,
+  });
+
+  final Axis direction;
+  final Color color1;
+  final Color color2;
+  final double dashSize;
+  final double gapSize;
+  final double strokeWidth;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke;
+
+    // Calculate the total length in the specified direction
+    final totalLength = direction == Axis.vertical ? size.height : size.width;
+    final halfLength = totalLength / 2;
+
+    double currentOffset = 0.0;
+
+    while (currentOffset < totalLength) {
+      // Switch color depending on the current position
+      paint.color = currentOffset < halfLength ? color1 : color2;
+
+      // Calculate end of dash to ensure it doesn't overflow the total length
+      final dashEnd = currentOffset + dashSize;
+      final drawEnd = dashEnd < totalLength ? dashEnd : totalLength;
+
+      // Draw the dash segment
+      if (direction == Axis.vertical) {
+        canvas.drawLine(
+          Offset(size.width / 2, currentOffset),
+          Offset(size.width / 2, drawEnd),
+          paint,
+        );
+      } else {
+        canvas.drawLine(
+          Offset(currentOffset, size.height / 2),
+          Offset(drawEnd, size.height / 2),
+          paint,
+        );
+      }
+
+      // Update the offset for the next dash segment
+      currentOffset = drawEnd + gapSize;
+    }
+  }
+
+  @override
+  bool shouldRepaint(SplitDashedLinePainter oldDelegate) {
+    return direction != oldDelegate.direction ||
+        color1 != oldDelegate.color1 ||
+        color2 != oldDelegate.color2 ||
+        dashSize != oldDelegate.dashSize ||
+        gapSize != oldDelegate.gapSize ||
+        strokeWidth != oldDelegate.strokeWidth;
   }
 }
 

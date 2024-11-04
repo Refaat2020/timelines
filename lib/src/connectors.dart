@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 import 'connector_theme.dart';
 import 'line_painter.dart';
-import 'timelines.dart';
 import 'timeline_node.dart';
 import 'timeline_theme.dart';
+import 'timelines.dart';
 
 /// Abstract class for predefined connector widgets.
 ///
@@ -343,13 +342,15 @@ class DashedLineConnector extends Connector {
       endIndent: getEffectiveEndIndent(context),
       space: getEffectiveSpace(context),
       child: CustomPaint(
-        painter: DashedLinePainter(
+        painter: SplitDashedLinePainter(
           direction: direction,
-          color: getEffectiveColor(context),
+          color1: getEffectiveColor(context),
+          color2: gapColor ?? getEffectiveColor(context),
+          // color: getEffectiveColor(context),
           strokeWidth: getEffectiveThickness(context),
-          dashSize: dash ?? 1.0,
-          gapSize: gap ?? 1.0,
-          gapColor: gapColor ?? Colors.transparent,
+          // dashSize: dash ?? 1.0,
+          // gapSize: gap ?? 1.0,
+          // gapColor: gapColor ?? Colors.transparent,
         ),
         child: Container(),
       ),
@@ -403,7 +404,7 @@ class _ConnectorIndent extends StatelessWidget {
     this.indent,
     this.endIndent,
     required this.child,
-  })   : assert(space == null || space >= 0),
+  })  : assert(space == null || space >= 0),
         assert(indent == null || indent >= 0),
         assert(endIndent == null || endIndent >= 0),
         super(key: key);
